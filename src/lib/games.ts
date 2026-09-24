@@ -1,7 +1,12 @@
-import { eq, asc } from 'drizzle-orm';
+import { eq, asc, inArray, and } from 'drizzle-orm';
 import type { Database } from './db';
 import { games, categories, publishers } from '../../db/schema';
 import type { Game } from '../types/game';
+
+export type GameFilters = {
+    categoryIds?: number[];
+    publisherIds?: number[];
+};
 
 const gameSelection = {
     id: games.id,
@@ -42,6 +47,14 @@ function mapGame(row: GameSelectionRow): Game {
     };
 }
 
+function normalizeFilterIds(values: number[] | undefined): number[] {
+    if (!values || values.length === 0) {
+        return [];
+    }
+
+    return [...new Set(values.filter((value) => Number.isInteger(value) && value > 0))];
+}
+
 function baseGamesQuery(db: Database) {
     return db
         .select(gameSelection)
@@ -51,15 +64,53 @@ function baseGamesQuery(db: Database) {
 }
 
 /** All games ordered by title. */
-export async function getAllGames(db: Database): Promise<Game[]> {
-    const rows = await baseGamesQuery(db).orderBy(asc(games.title));
+export async function getAllGames(db: Database, filters: GameFilters = {}): Promise<Game[]> {
+    const categoryIds = normalizeFilterIds(filters.categoryIds);
+    const publisherIds = normalizeFilterIds(filters.publisherIds);
+
+    const whereClauses = [];
+    if (categoryIds.length > 0) {
+        whereClauses.push(inArray(games.categoryId, categoryIds));
+    }
+    if (publisherIds.length > 0) {
+        whereClauses.push(inArray(games.publisherId, publisherIds));
+    }
+
+    const query = whereClauses.length > 0 ? baseGamesQuery(db).where(and(...whereClauses)) : baseGamesQuery(db);
+
+    const rows = await query.orderBy(asc(games.title));
     return rows.map(mapGame);
 }
 
 /** All game ids ordered by title. */
-export async function getAllGameIds(db: Database): Promise<number[]> {
-    const rows = await db.select({ id: games.id }).from(games).orderBy(asc(games.title));
+export async function getAllGameIds(db: Database, filters: GameFilters = {}): Promise<number[]> {
+    const categoryIds = normalizeFilterIds(filters.categoryIds);
+    const publisherIds = normalizeFilterIds(filters.publisherIds);
+
+    const whereClauses = [];
+    if (categoryIds.length > 0) {
+        whereClauses.push(inArray(games.categoryId, categoryIds));
+    }
+    if (publisherIds.length > 0) {
+        whereClauses.push(inArray(games.publisherId, publisherIds));
+    }
+
+    const query = whereClauses.length > 0 ? db.select({ id: games.id }).from(games).where(and(...whereClauses)) : db.select({ id: games.id }).from(games);
+
+    const rows = await query.orderBy(asc(games.title));
     return rows.map((row) => row.id);
+}
+
+/** All categories ordered alphabetically. */
+export async function getAllCategories(db: Database): Promise<Array<{ id: number; name: string }>> {
+    const rows = await db.select({ id: categories.id, name: categories.name }).from(categories).orderBy(asc(categories.name));
+    return rows;
+}
+
+/** All publishers ordered alphabetically. */
+export async function getAllPublishers(db: Database): Promise<Array<{ id: number; name: string }>> {
+    const rows = await db.select({ id: publishers.id, name: publishers.name }).from(publishers).orderBy(asc(publishers.name));
+    return rows;
 }
 
 /** A single game by id, or null when it does not exist. */
