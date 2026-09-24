@@ -53,6 +53,31 @@ test.describe('Game Listing and Navigation', () => {
     });
   });
 
+  test('should filter games by category and publisher combinations', async ({ page }) => {
+    await test.step('Navigate to homepage and open filters', async () => {
+      await page.goto('/');
+      await expect(page.getByTestId('games-grid')).toBeVisible();
+    });
+
+    await test.step('Apply a category and publisher filter', async () => {
+      await page.getByRole('checkbox', { name: /filter by category strategy/i }).check();
+      await page.getByRole('checkbox', { name: /filter by publisher devmasters inc\./i }).check();
+    });
+
+    await test.step('Verify only matching games remain visible', async () => {
+      const visibleCards = page.locator('[data-testid="game-card"]:visible');
+      await expect(page.getByTestId('results-count')).toContainText('1 game');
+      await expect(visibleCards).toHaveCount(1);
+      await expect(visibleCards.getByTestId('game-title')).toHaveText('Pipeline Conquest');
+    });
+
+    await test.step('Clear the filters and restore the full list', async () => {
+      await page.getByTestId('clear-filters').click();
+      await expect(page.getByTestId('results-count')).toContainText('21 games');
+      await expect(page.getByTestId('game-card').first()).toBeVisible();
+    });
+  });
+
   test('should display game details with all required information', async ({ page }) => {
     await test.step('Navigate to specific game details page', async () => {
       await page.goto('/game/1');
