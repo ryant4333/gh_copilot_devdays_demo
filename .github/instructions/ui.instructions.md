@@ -51,6 +51,18 @@ Refer to technology-specific instruction files:
 - Use props for configuration, not duplication
 - Document component APIs with TypeScript types
 
+### Commenting and API docs
+
+Treat comments as an explanation of intent, not a recap of the code. If a component or helper is doing something non-obvious, document the decision, the constraint, or the reason for the implementation. Delete comments that simply repeat what the next line already says.
+
+For reusable Astro components, each `Props` interface is the public contract. Keep it explicit and self-documenting, and add a brief note only where the behavior or trade-off is not obvious.
+
+## TypeScript formatting rules
+
+- Prefer explicit parameter and return types for exported functions and helpers.
+- Use `import type` for type-only imports and keep the codebase aligned with ESLint's `@typescript-eslint/consistent-type-imports` rule.
+- Keep interfaces and function signatures readable; if a type or parameter set is non-trivial, split the declaration across lines rather than burying the meaning in a dense inline shape.
+
 ## Development Workflow
 
 1. **Choose the right tool**: 
