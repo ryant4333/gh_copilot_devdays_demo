@@ -2,6 +2,7 @@
 import type { Game } from '../types/game';
 import Tag from './Tag.astro';
 import ArrowRight from '../assets/icons/arrow-right.svg';
+import { formatStarRating } from '../lib/ratings';
 
 interface Props {
     game: Game;
@@ -36,6 +37,17 @@ const { game } = Astro.props;
                     )}
                 </div>
             )}
+
+            <div class="text-sm mb-4" data-testid="game-rating">
+                {game.starRating !== null ? (
+                    <>
+                        <span class="text-yellow-400">{formatStarRating(game.starRating)}</span>
+                        <span class="text-slate-400 ml-2">{game.starRating.toFixed(1)} / 5</span>
+                    </>
+                ) : (
+                    <span class="text-slate-400">No rating yet</span>
+                )}
+            </div>
 
             <p class="text-slate-400 mb-4 text-sm line-clamp-2" data-testid="game-description">{game.description}</p>
 
